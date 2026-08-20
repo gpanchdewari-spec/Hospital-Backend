@@ -7,6 +7,8 @@ import {
   updateDoctor,
   deleteDoctor,
   getPublicDoctors,
+  updateAvailability,
+  getMyAvailability,
  
 } from "../controllers/doctorController.js";
 
@@ -20,6 +22,20 @@ router.get("/public", getPublicDoctors);
 router.post("/", protect, authorizeRoles("admin"), createDoctor);
 
 router.get("/", protect, getAllDoctors);
+
+router.get(
+  "/availability",
+  protect,
+  authorizeRoles("doctor"),
+  getMyAvailability,
+);
+
+router.put(
+  "/availability",
+  protect,
+  authorizeRoles("doctor"),
+  updateAvailability,
+);
 
 router.get("/:id", protect, getDoctorById);
 

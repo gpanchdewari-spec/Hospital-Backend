@@ -183,3 +183,69 @@ export const getPublicDoctors = async (req, res) => {
     });
   }
 };
+
+
+// Get logged-in doctor's availability
+export const getMyAvailability = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const doctor = await Doctor.findOne({ userId });
+
+    if (!doctor) {
+      return res.status(404).json({
+        message: "Doctor not found",
+      });
+    }
+
+    res.status(200).json({
+      availability: doctor.availability || [],
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Unable to fetch availability",
+    });
+  }
+};
+
+
+//availaibility
+
+export const updateAvailability = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { availability } = req.body;
+
+    if (!Array.isArray(availability)) {
+      return res.status(400).json({
+        message: "Availability must be an array",
+      });
+    }
+
+    const doctor = await Doctor.findOne({ userId });
+
+    if (!doctor) {
+      return res.status(404).json({
+        message: "Doctor not found",
+      });
+    }
+
+    doctor.availability = availability;
+
+    await doctor.save();
+
+    res.status(200).json({
+      message: "Availability updated successfully",
+      availability: doctor.availability,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Unable to update availability",
+    });
+  }
+};

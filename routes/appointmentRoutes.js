@@ -8,6 +8,7 @@ import {
   updateAppointmentStatus,
   updatePaymentStatus,
   deleteAppointment,
+  getAvailableSlots,
 } from "../controllers/appointmentController.js";
 
 import protect from "../middlewares/authMiddleware.js";
@@ -20,6 +21,11 @@ router.post("/", protect, authorizeRoles("patient"), createAppointment);
 
 // Get logged-in patient's appointments
 router.get("/my", protect, authorizeRoles("patient"), getMyAppointments);
+
+// Get available slots
+router.get("/slots/:doctorId", getAvailableSlots);
+
+router.get("/:id", protect, getAppointmentById);
 
 // Get all appointments
 router.get("/", protect, getAllAppointments);
@@ -44,5 +50,13 @@ router.put(
 
 // Delete appointment
 router.delete("/:id", protect, authorizeRoles("admin"), deleteAppointment);
+
+
+
+
+
+
+
+
 
 export default router;

@@ -34,7 +34,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Welcome to SmartCare Hospital API",
+    message: "Welcome to NovaCare Hospital API",
   });
 });
 
