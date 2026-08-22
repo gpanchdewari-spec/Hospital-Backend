@@ -9,6 +9,9 @@ import {
   updatePaymentStatus,
   deleteAppointment,
   getAvailableSlots,
+  createEmergencyAppointment,
+  getEmergencyAppointments,
+  acceptEmergencyAppointment,
 } from "../controllers/appointmentController.js";
 
 import protect from "../middlewares/authMiddleware.js";
@@ -16,24 +19,54 @@ import authorizeRoles from "../middlewares/roleMiddleware.js";
 
 const router = express.Router();
 
+// ================= NORMAL APPOINTMENT =================
+
 // Book appointment
 router.post("/", protect, authorizeRoles("patient"), createAppointment);
 
-// Get logged-in patient's appointments
+// Logged-in patient's appointments
 router.get("/my", protect, authorizeRoles("patient"), getMyAppointments);
 
-// Get available slots
+// ================= AVAILABLE SLOTS =================
+
 router.get("/slots/:doctorId", getAvailableSlots);
 
-router.get("/:id", protect, getAppointmentById);
+// ================= EMERGENCY =================
 
-// Get all appointments
+// Patient creates emergency
+router.post(
+  "/emergency",
+  protect,
+  authorizeRoles("patient"),
+  createEmergencyAppointment,
+);
+
+// All doctors see pending emergencies
+router.get(
+  "/emergency",
+  protect,
+  authorizeRoles("doctor"),
+  getEmergencyAppointments,
+);
+
+// Doctor accepts emergency
+router.put(
+  "/emergency/:id/accept",
+  protect,
+  authorizeRoles("doctor"),
+  acceptEmergencyAppointment,
+);
+
+// ================= ALL APPOINTMENTS =================
+
+// Admin / doctor etc.
 router.get("/", protect, getAllAppointments);
 
-// Get one appointment
+// ================= DYNAMIC ID ROUTES =================
+// KEEP THESE AFTER SPECIFIC ROUTES
+
 router.get("/:id", protect, getAppointmentById);
 
-// Update appointment status
 router.put(
   "/:id/status",
   protect,
@@ -48,15 +81,6 @@ router.put(
   updatePaymentStatus,
 );
 
-// Delete appointment
 router.delete("/:id", protect, authorizeRoles("admin"), deleteAppointment);
-
-
-
-
-
-
-
-
 
 export default router;

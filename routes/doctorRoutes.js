@@ -9,6 +9,7 @@ import {
   getPublicDoctors,
   updateAvailability,
   getMyAvailability,
+  addUnavailableDate,
  
 } from "../controllers/doctorController.js";
 
@@ -30,11 +31,19 @@ router.get(
   getMyAvailability,
 );
 
+
 router.put(
   "/availability",
   protect,
   authorizeRoles("doctor"),
   updateAvailability,
+);
+
+router.post(
+  "/unavailable-date",
+  protect,
+  authorizeRoles("doctor"),
+  addUnavailableDate,
 );
 
 router.get("/:id", protect, getDoctorById);

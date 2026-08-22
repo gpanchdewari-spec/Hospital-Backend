@@ -76,7 +76,21 @@ const doctorSchema = new mongoose.Schema(
         },
       },
     ],
+    unavailableDates: [
+      {
+        date: {
+          type: Date,
+          required: true,
+        },
+
+        reason: {
+          type: String,
+          default: "",
+        },
+      },
+    ],
   },
+
   {
     timestamps: true,
   },

@@ -200,6 +200,7 @@ export const getMyAvailability = async (req, res) => {
 
     res.status(200).json({
       availability: doctor.availability || [],
+      unavailableDates: doctor.unavailableDates || [],
     });
   } catch (error) {
     console.log(error);
@@ -246,6 +247,80 @@ export const updateAvailability = async (req, res) => {
 
     res.status(500).json({
       message: "Unable to update availability",
+    });
+  }
+};
+
+
+
+
+
+
+// Add specific unavailable date
+export const addUnavailableDate = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { date, reason } = req.body;
+
+    if (!date) {
+      return res.status(400).json({
+        message: "Date is required",
+      });
+    }
+
+    const selectedDate = new Date(date);
+
+    if (isNaN(selectedDate.getTime())) {
+      return res.status(400).json({
+        message: "Invalid date",
+      });
+    }
+
+    // Normalize date
+    selectedDate.setHours(0, 0, 0, 0);
+
+    const doctor = await Doctor.findOne({ userId });
+
+    if (!doctor) {
+      return res.status(404).json({
+        message: "Doctor not found",
+      });
+    }
+
+    // Check duplicate leave
+    const alreadyUnavailable = doctor.unavailableDates?.some(
+      (item) => {
+        const existingDate = new Date(item.date);
+        existingDate.setHours(0, 0, 0, 0);
+
+        return existingDate.getTime() === selectedDate.getTime();
+      },
+    );
+
+    if (alreadyUnavailable) {
+      return res.status(400).json({
+        message: "This date is already marked as unavailable",
+      });
+    }
+
+    doctor.unavailableDates.push({
+      date: selectedDate,
+      reason: reason || "",
+    });
+
+    await doctor.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Leave added successfully",
+      unavailableDates: doctor.unavailableDates,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Unable to add leave",
     });
   }
 };

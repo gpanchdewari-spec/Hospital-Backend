@@ -11,7 +11,6 @@ const appointmentSchema = new mongoose.Schema(
     doctorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Doctor",
-      required: true,
     },
 
     appointmentDate: {
@@ -43,6 +42,17 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       enum: ["Pending", "Paid"],
       default: "Pending",
+    },
+
+    appointmentType: {
+      type: String,
+      enum: ["Normal", "Emergency"],
+      default: "Normal",
+    },
+
+    isEmergency: {
+      type: Boolean,
+      default: false,
     },
   },
   {

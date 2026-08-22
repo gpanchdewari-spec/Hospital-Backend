@@ -216,7 +216,7 @@ export const getMyAppointments = async (req, res) => {
   }
 };
 
-//update appointment status
+// update appointment status
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
@@ -228,7 +228,17 @@ export const updateAppointmentStatus = async (req, res) => {
       });
     }
 
-    appointment.status = req.body.status;
+    const { status } = req.body;
+
+    appointment.status = status;
+
+    // Emergency completed => auto mark as Paid
+    if (
+      appointment.appointmentType === "Emergency" &&
+      status === "Completed"
+    ) {
+      appointment.paymentStatus = "Paid";
+    }
 
     await appointment.save();
 
@@ -244,7 +254,6 @@ export const updateAppointmentStatus = async (req, res) => {
     });
   }
 };
-
 export const updatePaymentStatus = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
@@ -301,8 +310,6 @@ export const deleteAppointment = async (req, res) => {
 
 //slots
 
-
-
 ///Availableslots
 
 export const getAvailableSlots = async (req, res) => {
@@ -338,6 +345,25 @@ export const getAvailableSlots = async (req, res) => {
     const dayName = selectedDate.toLocaleDateString("en-US", {
       weekday: "long",
     });
+    // Check if doctor marked this exact date as unavailable
+    const isUnavailable = doctor.unavailableDates?.some((item) => {
+      const unavailableDate = new Date(item.date);
+
+      return (
+        unavailableDate.getFullYear() === selectedDate.getFullYear() &&
+        unavailableDate.getMonth() === selectedDate.getMonth() &&
+        unavailableDate.getDate() === selectedDate.getDate()
+      );
+    });
+
+    if (isUnavailable) {
+      return res.status(200).json({
+        date,
+        day: dayName,
+        slots: [],
+        message: "Doctor is unavailable on this date",
+      });
+    }
 
     // Find doctor's availability for that day
     const availability = doctor.availability.find(
@@ -391,7 +417,7 @@ export const getAvailableSlots = async (req, res) => {
 
     // Generate 30-minute slots
     while (
-      startHour < endHour ||   
+      startHour < endHour ||
       (startHour === endHour && startMinute < endMinute)
     ) {
       const time = `${String(startHour).padStart(2, "0")}:${String(
@@ -422,6 +448,136 @@ export const getAvailableSlots = async (req, res) => {
 
     res.status(500).json({
       message: "Unable to fetch available slots",
+    });
+  }
+};
+
+export const createEmergencyAppointment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const patient = await Patient.findOne({
+      userId,
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        message: "Patient not found",
+      });
+    }
+
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        message: "Emergency reason is required",
+      });
+    }
+
+    const appointment = await Appointment.create({
+      patientId: patient._id,
+
+      doctorId: null,
+
+      appointmentDate: new Date(),
+
+      appointmentTime: new Date().toLocaleTimeString(),
+
+      reason,
+
+      consultationFee: 10000,
+
+      appointmentType: "Emergency",
+
+      isEmergency: true,
+
+      status: "Pending",
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Emergency appointment created",
+      appointment,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Unable to create emergency appointment",
+    });
+  }
+};
+
+export const getEmergencyAppointments = async (req, res) => {
+  try {
+    const emergencies = await Appointment.find({
+      appointmentType: "Emergency",
+      status: "Pending",
+      doctorId: null,
+    })
+      .populate({
+        path: "patientId",
+        populate: {
+          path: "userId",
+          select: "name",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      emergencies,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Unable to fetch emergency appointments",
+    });
+  }
+};
+
+export const acceptEmergencyAppointment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const doctor = await Doctor.findOne({
+      userId,
+    });
+
+    if (!doctor) {
+      return res.status(404).json({
+        message: "Doctor not found",
+      });
+    }
+
+    const appointment = await Appointment.findOne({
+      _id: req.params.id,
+      appointmentType: "Emergency",
+      status: "Pending",
+      doctorId: null,
+    });
+
+    if (!appointment) {
+      return res.status(400).json({
+        message:
+          "Emergency appointment has already been accepted or does not exist",
+      });
+    }
+
+    appointment.doctorId = doctor._id;
+    appointment.status = "Approved";
+
+    await appointment.save();
+
+    res.status(200).json({
+      message: "Emergency appointment accepted",
+      appointment,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Unable to accept emergency appointment",
     });
   }
 };
